@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Page Title</title>
+</head>
+<style>
+    body{
+  background:black;
+  position: absolute;
+    width: 100vw;
+    height: 100vh;
+    display: block;
+    margin: 0;
+
+}
+#button,#changeposition{
+  position:relative;
+  z-index:10;
+  color:white;
+  display: inline-block;
+  background:#cccccc;
+  padding:8px;
+  color:black;
+  cursor: pointer;
+
+}
+#target{
+  width:100px;
+  height:100px;
+  position:absolute;
+  top:200px;
+  left:800px;
+  
+}
+
+#element{
+  border-radius:50%;
+  background:white;
+  width:50px;
+  height:50px;
+ top:100px;
+ left:200px;
+  position:fixed;
+  z-index:100;
+}
+#ppath{
+  position:fixed;
+  width:100%;
+  height:100%;
+  z-index:1;
+  left:0;
+  top:0;
+}
+#ppath path{
+    stroke-dasharray: 1000;
+	stroke-dashoffset: 1000;
+	animation-timing-function: ease-out;
+}
+#ppath.on path{
+   
+	animation-name: throwball;
+	animation-duration: 2.5s;
+}
+
+
+
+@keyframes throwball {
+  0%   {stroke-dashoffset: 1000;}
+  50%  {stroke-dashoffset: 0;}
+  100% {stroke-dashoffset: -1000;}
+}
+
+</style>
+<body>
+<div id="changeposition">Change</div>
+<div id="button">throw</div>
+<div id="target" >tg</div>
+<div id="element" draggable="true"></div>
+<svg id="ppath" class="off" width="100%" height="100%">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" opacity="0" stop-color="rgba(255,255,255,0)"/>
+      <stop offset="50%" opacity="0" stop-color="#05a"/>
+      <stop offset="100%" opacity="0" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+  </defs>
+  <path 
+   fill="none" stroke="url(#gradient)" stroke-width="20px" d="" />
+</svg>
+<script>
+    let ele=document.querySelector("#element");
+	let currentpos=0;
+    
+
+	 getRandomIntInclusive =(min, max) =>{
+		min = Math.ceil(min);
+		max = Math.floor(max);
+		return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
+	}
+	document.getElementById("changeposition").onclick = function() {
+		currentpos++;
+		if(currentpos>2){
+			currentpos=0;
+		}
+		ele.style.top =getRandomIntInclusive(0,400)+"px";
+		ele.style.left = getRandomIntInclusive(200,600)+"px";
+
+		ele.style.transform ="translate(0,0)";
+		
+		
+
+	}
+
+
+
+	
+var funParabola = function(element, target, options) {
+
+	
+	var defaults = {
+		speed: 166.67, 
+		curvature: 0.002,  
+		progress: function() {},
+		complete: function() {}
+	};
+	
+	var params = {}; options = options || {};
+	
+	for (var key in defaults) {
+		params[key] = options[key] || defaults[key];
+	}
+	
+	var exports = {
+		mark: function() { return this; },
+		position: function() { return this; },
+		move: function() { return this; },
+		init: function() { return this; }
+	};
+	
+
+	var moveStyle = "margin", testDiv = document.createElement("div");
+	if ("oninput" in testDiv) {
+		["", "ms", "webkit"].forEach(function(prefix) {
+			var transform = prefix + (prefix? "T": "t") + "ransform";
+			if (transform in testDiv.style) {
+				moveStyle = transform;
+			}
+		});		
+	}
+	
+
+	var a = params.curvature, b = 0, c = 0; 
+	
+
+	var flagMove = true;
+	
+	if (element && target && element.nodeType == 1 && target.nodeType == 1) {
+		var rectElement = {}, rectTarget = {};
+		
+		
+		var centerElement = {}, centerTarget = {};
+		
+	
+		var coordElement = {}, coordTarget = {};
+		
+
+		exports.mark = function() {
+			if (flagMove == false) return this;
+			if (typeof coordElement.x == "undefined") this.position();
+			
+			return this;
+		}
+		
+		exports.position = function() {
+			if (flagMove == false) return this;
+			
+			var scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft,
+				scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+			
+
+			if (moveStyle == "margin") {
+				element.style.marginLeft = element.style.marginTop = "0px";
+			} else {
+				element.style[moveStyle] = "translate(0, 0)";
+			}
+
+			rectElement = element.getBoundingClientRect();
+			rectTarget = target.getBoundingClientRect();
+			
+
+			centerElement = {
+				x: rectElement.left + (rectElement.right - rectElement.left) / 2 + scrollLeft,
+				y: rectElement.top + (rectElement.bottom - rectElement.top) / 2	+ scrollTop
+			};
+			
+	
+			centerTarget = {
+				x: rectTarget.left + (rectTarget.right - rectTarget.left) / 2 + scrollLeft,
+				y: rectTarget.top + (rectTarget.bottom - rectTarget.top) / 2 + scrollTop		
+			};
+			
+
+			coordElement = {
+				x: 0,
+				y: 0	
+			};
+			coordTarget = {
+				x: -1 * (centerElement.x - centerTarget.x),
+				y:  -1 * (centerElement.y - centerTarget.y)	
+			};
+			
+	
+			b = (coordTarget.y - a * coordTarget.x * coordTarget.x) / coordTarget.x;	
+			
+			return this;
+		};		
+		let inputx;
+        let inputy
+
+		exports.move = function() {
+   
+			if (flagMove == false) return this;
+			
+			var startx = 0, rate = coordTarget.x > 0? 1: -1;
+            let i=-1;
+			var step = function() {
+                i++;
+				var tangent = 2 * a * startx + b;
+
+				startx = startx + rate * Math.sqrt(params.speed / (tangent * tangent + 1));
+				
+		
+				if ((rate == 1 && startx > coordTarget.x) || (rate == -1 && startx < coordTarget.x)) {
+					startx = coordTarget.x;
+				}
+				var x = startx, y = a * x * x + b * x;
+				
+		
+				
+		
+				if (moveStyle == "margin") {
+					element.style.marginLeft = x + "px";
+					element.style.marginTop = y + "px";
+				} else {
+					element.style[moveStyle] = "translate("+ [x + "px", y + "px"].join() +")";
+				}
+				
+				if (startx !== coordTarget.x) {
+					params.progress(x, y);
+                inputx=centerElement.x+Math.round(x);
+                inputy=centerElement.y+Math.round(y);
+                
+          
+       
+          
+          
+          
+					window.requestAnimationFrame(step);	
+				} else {
+
+					
+					params.complete();
+					flagMove = true;	
+					
+				}
+			};
+			window.requestAnimationFrame(step);
+			flagMove = false;
+			
+			return this;
+		};
+		
+
+        exports.drawpath = function(callbk) {
+            let locstring="M"+centerElement.x+" "+centerElement.y+ " C";
+			if (flagMove == false) return this;
+			
+			var startx = 0, rate = coordTarget.x > 0? 1: -1;
+            let i=-1;
+			var step = function() {
+                i++;
+				var tangent = 2 * a * startx + b;
+
+				startx = startx + rate * Math.sqrt(params.speed / (tangent * tangent + 1));
+				
+		
+				if ((rate == 1 && startx > coordTarget.x) || (rate == -1 && startx < coordTarget.x)) {
+					startx = coordTarget.x;
+				}
+				var x = startx, y = a * x * x + b * x;
+				
+		
+				
+		
+				
+				if (startx !== coordTarget.x) {
+					params.progress(x, y);
+                inputx=centerElement.x+Math.round(x);
+                inputy=centerElement.y+Math.round(y);
+                
+                if(locstring.slice(-1)!="C"){
+                    
+                    if(i % 6==0){
+                        locstring=locstring+", C"+inputx+" "+inputy;
+                    }else{
+                        locstring=locstring+", "+inputx+" "+inputy;
+                    }
+                    
+                }else{
+                    locstring=locstring+inputx+" "+inputy;
+                };
+          
+       
+          
+          
+          
+					window.requestAnimationFrame(step);	
+				} else {
+                  
+                    let fillinCount=6- (i % 6) ;
+                    for(var k=0;k<fillinCount;k++){
+                        locstring= locstring +", "+inputx + " "+ inputy;
+                    }
+                    
+					document.querySelector("#ppath path").setAttribute("d", locstring);
+					
+                    document.querySelector("#ppath").setAttribute("class", "on");
+					params.complete();
+					flagMove = true;
+                    
+                   
+                    setTimeout(function(){ parabola.init("tg"); }, 600);
+				}
+			};
+			window.requestAnimationFrame(step);
+			flagMove = false;
+			
+			return this;
+		};
+
+	
+		exports.init = function(obj) {
+            if(obj=="path"){
+                this.position().drawpath();
+            }else{
+                this.position().mark().move();
+            }
+			
+		};
+	}
+	
+	return exports;
+};
+
+
+(function() {
+    var lastTime = 0;
+    var vendors = ['webkit', 'moz'];
+    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x] + 'RequestAnimationFrame'];
+        window.cancelAnimationFrame = window[vendors[x] + 'CancelAnimationFrame'] ||    // name has changed in Webkit
+                                      window[vendors[x] + 'CancelRequestAnimationFrame'];
+    }
+
+    if (!window.requestAnimationFrame) {
+        window.requestAnimationFrame = function(callback, element) {
+            var currTime = new Date().getTime();
+            var timeToCall = Math.max(0, 16.7 - (currTime - lastTime));
+            var id = window.setTimeout(function() {
+                callback(currTime + timeToCall);
+            }, timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        };
+    }
+    if (!window.cancelAnimationFrame) {
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+    }
+}());
+  
+  
+  
+
+var element = document.getElementById("element"), 
+    target = document.getElementById("target");
+
+var parabola = funParabola(element, target).mark();
+
+  
+document.getElementById("button").onclick = function() {
+  
+    element.style.marginLeft = "0px";
+    element.style.marginTop = "0px";
+	document.querySelector("#ppath").setAttribute("class", " ");
+    parabola.init("path");
+    
+    
+};
+
+</script>
+
+</body>
+</html>
